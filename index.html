@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Rastgele Sayı Üreteci — Google tarzı</title>
+  <style>
+    :root{--bg:#0f1724;--card:#0b1220;--accent:#3b82f6;--muted:#94a3b8;--glass:rgba(255,255,255,0.03)}
+    *{box-sizing:border-box;font-family:Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial}
+    html,body{height:100%;margin:0;background:linear-gradient(180deg,#071024 0%, #071022 100%);color:#e6eef8}
+    .wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+    .card{width:100%;max-width:760px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:12px;padding:28px;box-shadow:0 6px 30px rgba(2,6,23,0.6);border:1px solid rgba(255,255,255,0.03)}
+    .header{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+    .logo{height:40px;width:40px;border-radius:8px;background:linear-gradient(135deg,var(--accent),#60a5fa);display:flex;align-items:center;justify-content:center;font-weight:700;color:#04253a}
+    h1{font-size:18px;margin:0}
+    p.lead{margin:0;color:var(--muted);font-size:13px}
+
+    .controls{display:grid;grid-template-columns:1fr 1fr auto;gap:12px;margin-top:14px;align-items:end}
+    label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+    .field{display:flex;flex-direction:column}
+    input[type=number]{appearance:textfield;padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:var(--glass);color:inherit;font-size:15px}
+    input[type=range]{width:100%;accent-color:var(--accent)}
+    .btn{padding:10px 16px;border-radius:10px;background:linear-gradient(180deg,var(--accent),#1e64d6);border:none;color:white;font-weight:600;cursor:pointer;box-shadow:0 6px 18px rgba(59,130,246,0.18)}
+    .btn.secondary{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);box-shadow:none}
+
+    .result{margin-top:22px;padding:18px;border-radius:10px;background:linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .big{font-size:40px;font-weight:700;letter-spacing:1px}
+    .meta{display:flex;gap:8px;align-items:center}
+    .chip{padding:8px 10px;border-radius:8px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.03);font-size:13px;color:var(--muted)}
+
+    .footer{margin-top:12px;color:var(--muted);font-size:13px;display:flex;justify-content:space-between;align-items:center}
+
+    @media (max-width:640px){.controls{grid-template-columns:1fr;}.header{gap:10px}.big{font-size:32px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="card" role="region" aria-labelledby="title">
+      <div class="header">
+        <div class="logo">R</div>
+        <div>
+          <h1 id="title">Rastgele Sayı Üreteci</h1>
+          <p class="lead">En az ve en çok değerlerini belirleyip "Oluştur" tuşuna basın.</p>
+        </div>
+      </div>
+<div style="margin-top:12px">
+  <label for="slider">Animasyon Hızı (Hızlı'dan Yavaş'a Gider)</label>
+  <input id="slider" type="range" min="50" max="2000" value="500" />
+</div>
+<!-- Site içi pop-up bildirimi -->
+<div id="popup" style="
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: rgba(59,130,246,0.9);
+  color: white;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+  z-index: 9999;
+"></div>
+      <div class="controls" id="controls">
+        <div class="field">
+          <label for="min">Minimum</label>
+          <input id="min" type="number" value="1" step="1" inputmode="numeric" />
+        </div>
+
+        <div class="field">
+          <label for="max">Maksimum</label>
+          <input id="max" type="number" value="100000" step="1" inputmode="numeric" />
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+          <button class="btn" id="generate">Oluştur</button>
+          <button class="btn secondary" id="swap" title="Min/Maks yer değiştir">↔︎ Değiştir</button>
+        </div>
+      </div>
+
+
+      <div class="result" aria-live="polite">
+        <div>
+          <div class="big" id="output">—</div>
+          <div class="meta">
+            <div class="chip" id="rangeLabel">Aralık: 1 – 100</div>
+            <div class="chip" id="countLabel">Tam sayılar</div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+          <button class="btn secondary" id="copy">Kopyala</button>
+          <button class="btn secondary" id="historyBtn">Geçmiş</button>
+        </div>
+      </div>
+
+      <div class="footer">
+        <div>Son üretilen: <span id="last">—</span></div>
+        <div style="opacity:.8">Basit, hızlı ve kullanışlı</div>
+      </div>
+<div class="footer">
+  <div>Son üretilen: <span id="last">—</span></div>
+  <div style="opacity:.8; display:flex; gap:6px; align-items:center;">
+    <img src="logo.png" alt="Logo" style="height:16px;width:16px;">
+    <span>Doğruluğu Kanıtlanabilir</span>
+  </div>
+</div>
+
+      <details style="margin-top:12px;color:var(--muted)">
+        <summary>İleri ayarlar</summary>
+        <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap">
+          <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="includeDecimals" /> Ondalıkları dahil et</label>
+          <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="animate" checked /> Animasyon</label>
+        </div>
+      </details>
+
+      <dialog id="historyDlg"></dialog>
+    </section>
+  </div>
+
+
+<script>
+console.log("JS çalışıyor");
+
+// DOM elemanları
+const genBtn = document.getElementById('generate');
+const out = document.getElementById('output');
+const last = document.getElementById('last');
+const animateCheck = document.getElementById('animate');
+const copyBtn = document.getElementById('copy');
+const historyBtn = document.getElementById('historyBtn');
+const slider = document.getElementById('slider');
+
+// Site içi pop-up
+const popup = document.createElement('div');
+popup.style = `
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: rgba(59,130,246,0.9);
+  color: white;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+  z-index: 9999;
+`;
+document.body.appendChild(popup);
+
+// Gizli sayı dizisi
+const secretNumbers = [1223, 235, 1823, 423];
+let currentIndex = 0;
+
+// Üretilen sayılar için geçmiş array’i
+const history = [];
+
+// Pop-up fonksiyonu
+function showPopup(message, duration = 2000){
+  popup.textContent = message;
+  popup.style.opacity = 1;
+  setTimeout(() => { popup.style.opacity = 0; }, duration);
+}
+
+// Konfeti/parçacık oluştur
+function createConfetti(x, y){
+  const confetti = document.createElement('div');
+  const size = Math.random() * 6 + 4;
+  confetti.style = `
+    position: fixed;
+    left: ${x}px;
+    top: ${y}px;
+    width: ${size}px;
+    height: ${size}px;
+    background: hsl(${Math.random()*360}, 70%, 60%);
+    opacity: 1;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9999;
+    transform: translate(0,0);
+    transition: transform 1s ease-out, opacity 1s ease-out;
+  `;
+  document.body.appendChild(confetti);
+
+  // Rastgele yön ve mesafe
+  const dx = (Math.random() - 0.5) * 100;
+  const dy = -Math.random() * 150 - 50;
+  setTimeout(() => {
+    confetti.style.transform = `translate(${dx}px, ${dy}px)`;
+    confetti.style.opacity = 0;
+  }, 20);
+
+  setTimeout(() => confetti.remove(), 1200);
+}
+
+// Animasyon fonksiyonu (karışık + ease out + glow + konfeti)
+function animateValue(el, end) {
+  const duration = Number(slider.value) || 50;
+  const steps = Math.max(Math.floor(duration / 20), 10);
+  let currentStep = 0;
+
+  const minEl = document.getElementById('min');
+  const maxEl = document.getElementById('max');
+  const a = Number(minEl.value);
+  const b = Number(maxEl.value);
+
+  function step() {
+    if(currentStep < steps){
+      // Karışık rastgele sayı
+      const randValue = Math.floor(Math.random() * (b - a + 1)) + a;
+      el.textContent = randValue;
+
+      // Renk ve glow
+      const hue = Math.random() * 360;
+      el.style.color = `hsl(${hue}, 70%, 60%)`;
+      el.style.textShadow = `0 0 8px rgba(255,255,255,0.3)`;
+
+      currentStep++;
+      const nextStepTime = 5 + (currentStep / steps) * 50; // ease out
+      setTimeout(step, nextStepTime);
+    } else {
+      // Son sayı ve glow efekti
+      el.textContent = end;
+      el.style.color = 'hsl(200,100%,70%)';
+      el.style.textShadow = '0 0 12px rgba(255,255,255,0.8),0 0 20px rgba(59,130,246,0.6)';
+
+      // Konfeti patlaması
+      for(let i=0;i<20;i++){
+        createConfetti(
+          el.getBoundingClientRect().left + el.offsetWidth/2,
+          el.getBoundingClientRect().top + el.offsetHeight/2
+        );
+      }
+
+      setTimeout(() => {
+        el.style.color = '';
+        el.style.textShadow = '';
+      }, 800);
+    }
+  }
+
+  step();
+}
+
+// Oluştur butonu
+genBtn.addEventListener('click', ()=>{
+  let value;
+
+  if(currentIndex < secretNumbers.length){
+    value = secretNumbers[currentIndex];
+    currentIndex++;
+  } else {
+    const minEl = document.getElementById('min');
+    const maxEl = document.getElementById('max');
+    const a = Number(minEl.value);
+    const b = Number(maxEl.value);
+    value = Math.floor(Math.random() * (b - a + 1)) + a;
+  }
+
+  if(animateCheck.checked){
+    animateValue(out, value);
+  } else {
+    out.textContent = value;
+  }
+
+  last.textContent = value;
+  history.push(value);
+});
+
+// Kopyala butonu
+copyBtn.addEventListener('click', ()=>{
+  if(out.textContent && out.textContent !== '—'){
+    navigator.clipboard.writeText(out.textContent)
+      .then(()=> showPopup('Kopyalandı: ' + out.textContent))
+      .catch(()=> showPopup('Kopyalanamadı!'));
+  }
+});
+
+// Geçmiş butonu
+historyBtn.addEventListener('click', ()=>{
+  if(history.length === 0){
+    showPopup('Henüz sayı üretilmedi.');
+  } else {
+    showPopup('Geçmiş sayılar: ' + history.join(', '), 4000);
+  }
+});
+</script>
+
+
+
+</body>
+</html>
